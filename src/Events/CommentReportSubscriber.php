@@ -8,22 +8,22 @@ use App\Entity\Comment;
 use Symfony\Component\HttpKernel\Event\ViewEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 
-class CommentSentAtSubscriber implements EventSubscriberInterface
+class CommentReportSubscriber implements EventSubscriberInterface
 {
     public static function getSubscribedEvents()
     {
         return [
-            KernelEvents::VIEW => ['setSentAtForComment', EventPriorities::PRE_VALIDATE]
+            KernelEvents::VIEW => ['setReportForComment', EventPriorities::PRE_VALIDATE]
         ];
     }
 
-    public function setSentAtForComment(ViewEvent $event)
+    public function setReportForComment(ViewEvent $event)
     {
         $comment = $event->getControllerResult();
         $method = $event->getRequest()->getMethod();
 
         if ($comment instanceof Comment && $method==="POST") {
-            $comment->setSentAt(new \DateTime());
+            $comment->setReported(false);
         }
     }
 }

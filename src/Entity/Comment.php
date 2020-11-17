@@ -99,7 +99,7 @@ class Comment
     private $commentParent;
 
     /**
-     * @ORM\OneToMany(targetEntity=Comment::class, mappedBy="commentParent")
+     * @ORM\OneToMany(targetEntity=Comment::class, mappedBy="commentParent", cascade={"remove"})
      * @Groups({"comments_read"})
      */
     private $parentComment;
