@@ -3,12 +3,50 @@
 namespace App\Entity;
 
 use App\Repository\CommentRepository;
+use ApiPlatform\Core\Annotation\ApiFilter;
+use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\SearchFilter;
+use ApiPlatform\Core\Annotation\ApiResource;
+use Symfony\Component\Serializer\Annotation\Groups;
+use Gedmo\Mapping\Annotation as Gedmo;
+use Symfony\Component\Validator\Constraints as Assert;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
  * @ORM\Entity(repositoryClass=CommentRepository::class)
+ * @Gedmo\SoftDeleteable(fieldName="deletedAt")
+ * @ApiResource(
+ *  collectionOperations={"GET", "POST"},
+ *  itemOperations={
+ *      "GET", 
+ *      "DELETE"={"security"="object.getUser() == user"},
+ *      "report"={
+ *          "method"="PUT",
+ *          "path"="/comments/{id}/report",
+ *          "controller"="App\Controller\ReportCommentController",
+ *          "openapi_context"={
+ *              "summary"="Report a comment"
+ *          }
+ *      },
+ *      "validReport"={
+ *          "method"="PUT",
+ *          "security"="is_granted('ROLE_ADMIN')",
+ *          "path"="/comments/{id}/validReport",
+ *          "controller"="App\Controller\ValidReportCommentController",
+ *          "openapi_context"={
+ *              "summary"="Validate a reported comment"
+ *          }
+ *      }
+ *  },
+ *  attributes={
+ *      "order"={"sentAt":"ASC"}
+ *  },
+ *  normalizationContext={
+ *      "groups"={"comments_read"}
+ *  },
+ * )
+ * @ApiFilter(SearchFilter::class)
  */
 class Comment
 {
@@ -16,44 +54,60 @@ class Comment
      * @ORM\Id
      * @ORM\GeneratedValue
      * @ORM\Column(type="integer")
+     * @Groups({"comments_read"})
      */
     private $id;
 
     /**
      * @ORM\Column(type="text")
+     * @Groups({"comments_read"})
+     * @Assert\NotBlank(message="Le message est obligatoire")
      */
     private $content;
 
     /**
      * @ORM\Column(type="boolean")
+     * @Groups({"comments_read"})
      */
     private $reported;
 
     /**
      * @ORM\Column(type="boolean")
+     * @Groups({"comments_read"})
      */
     private $displayed;
 
     /**
      * @ORM\Column(type="datetime")
+     * @Groups({"comments_read"})
+     * @Assert\NotBlank(message="La date est obligatoire")
      */
     private $sentAt;
 
     /**
      * @ORM\ManyToOne(targetEntity=User::class, inversedBy="comments")
      * @ORM\JoinColumn(nullable=false)
+     * @Groups({"comments_read"})
+     * @Assert\NotBlank(message="Le nom de l'utilisateur est obligatoire")
      */
     private $user;
 
     /**
      * @ORM\ManyToOne(targetEntity=Comment::class, inversedBy="parentComment")
+     * @Groups({"comments_read"})
      */
     private $commentParent;
 
     /**
      * @ORM\OneToMany(targetEntity=Comment::class, mappedBy="commentParent")
+     * @Groups({"comments_read"})
      */
     private $parentComment;
+
+    /**
+     * @ORM\Column(name="deleted_at", type="datetime", nullable=true)
+     */
+    private $deletedAt;
 
     public function __construct()
     {
@@ -163,6 +217,18 @@ class Comment
                 $parentComment->setCommentParent(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getDeletedAt(): ?\DateTimeInterface
+    {
+        return $this->deletedAt;
+    }
+
+    public function setDeletedAt(?\DateTimeInterface $deletedAt): self
+    {
+        $this->deletedAt = $deletedAt;
 
         return $this;
     }
