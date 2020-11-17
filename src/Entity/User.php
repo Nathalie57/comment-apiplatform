@@ -40,13 +40,13 @@ class User implements UserInterface
 
     /**
      * @ORM\Column(type="json")
-     * @Assert\NotBlank(message="Le mot de passe est obligatoire")
      */
     private $roles = [];
 
     /**
      * @var string The hashed password
      * @ORM\Column(type="string")
+     * @Assert\NotBlank(message="Le mot de passe est obligatoire")
      */
     private $password;
 
